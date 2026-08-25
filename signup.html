@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account — Digital Twin Verse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0F19;
+    --bg-2: #05070C;
+    --surface: rgba(20, 26, 41, 0.72);
+    --surface-border: #2A3142;
+    --indigo: #6366F1;
+    --violet: #8B5CF6;
+    --cyan: #22D3EE;
+    --text: #F5F6FA;
+    --muted: #9CA3AF;
+    --error: #F87171;
+    --input-bg: rgba(11, 15, 25, 0.55);
+    --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  }
+
+  [data-theme="light"] {
+    --bg: #EEF0F6;
+    --bg-2: #E4E7F1;
+    --surface: rgba(255, 255, 255, 0.75);
+    --surface-border: #DDE1ED;
+    --text: #171B2C;
+    --muted: #6B7280;
+    --input-bg: rgba(255, 255, 255, 0.7);
+    --card-shadow: 0 20px 50px rgba(99, 102, 241, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    padding: 24px;
+    transition: background 0.5s ease, color 0.5s ease;
+  }
+
+  /* ---------- Animated background layers ---------- */
+  .bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+  .bg-base {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, var(--bg) 0%, var(--bg-2) 100%);
+    transition: background 0.5s ease;
+  }
+
+  /* large orbiting blobs — real, visible motion along a path, not just pulsing opacity */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.5;
+    will-change: transform;
+  }
+  [data-theme="light"] .blob { opacity: 0.35; filter: blur(80px); }
+
+  .blob-1 {
+    width: 46vw; height: 46vw;
+    top: -10%; left: -10%;
+    background: radial-gradient(circle, var(--indigo), transparent 70%);
+    animation: orbit1 26s linear infinite;
+  }
+  .blob-2 {
+    width: 40vw; height: 40vw;
+    top: 40%; right: -12%;
+    background: radial-gradient(circle, var(--violet), transparent 70%);
+    animation: orbit2 32s linear infinite;
+  }
+  .blob-3 {
+    width: 34vw; height: 34vw;
+    bottom: -14%; left: 20%;
+    background: radial-gradient(circle, var(--cyan), transparent 70%);
+    animation: orbit3 22s linear infinite;
+  }
+
+  @keyframes orbit1 {
+    0%   { transform: translate(0, 0) scale(1); }
+    25%  { transform: translate(18vw, 10vh) scale(1.15); }
+    50%  { transform: translate(8vw, 22vh) scale(0.95); }
+    75%  { transform: translate(-6vw, 8vh) scale(1.05); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+  @keyframes orbit2 {
+    0%   { transform: translate(0, 0) scale(1); }
+    30%  { transform: translate(-14vw, 14vh) scale(1.1); }
+    60%  { transform: translate(-4vw, -10vh) scale(0.92); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+  @keyframes orbit3 {
+    0%   { transform: translate(0, 0) scale(1); }
+    33%  { transform: translate(10vw, -12vh) scale(1.12); }
+    66%  { transform: translate(-8vw, -4vh) scale(0.96); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  /* floating particles for extra life */
+  .particle {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--cyan);
+    opacity: 0.5;
+    animation: floatUp linear infinite;
+  }
+  [data-theme="light"] .particle { background: var(--indigo); opacity: 0.35; }
+
+  @keyframes floatUp {
+    0%   { transform: translateY(0) translateX(0); opacity: 0; }
+    10%  { opacity: 0.6; }
+    90%  { opacity: 0.3; }
+    100% { transform: translateY(-110vh) translateX(var(--drift, 20px)); opacity: 0; }
+  }
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- Theme toggle ---------- */
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 999px;
+    padding: 5px;
+    cursor: pointer;
+  }
+
+  .theme-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .theme-toggle button.active {
+    background: linear-gradient(135deg, var(--indigo), var(--violet));
+    color: white;
+  }
+
+  /* ---------- Card ---------- */
+  .card-wrap {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 400px;
+    animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    border-radius: 20px;
+    padding: 40px 36px 32px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--card-shadow), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    transition: background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--indigo), var(--violet));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: white;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+    flex-shrink: 0;
+  }
+
+  .brand-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  .brand-name .accent {
+    background: linear-gradient(90deg, var(--indigo), var(--cyan));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13.5px;
+    margin-bottom: 30px;
+    line-height: 1.5;
+  }
+
+  form { display: flex; flex-direction: column; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 7px; }
+
+  label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+  }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+
+  .input-wrap .icon-left {
+    position: absolute;
+    left: 13px;
+    color: var(--muted);
+    pointer-events: none;
+    display: flex;
+  }
+
+  input[type="email"],
+  input[type="password"],
+  input[type="text"] {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--surface-border);
+    border-radius: 11px;
+    padding: 12px 44px 12px 40px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  input:not(#password) { padding-right: 14px; }
+
+  input::placeholder { color: var(--muted); opacity: 0.7; }
+  input:hover { border-color: var(--cyan); }
+  input:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+  }
+
+  .toggle-visibility {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+
+  .toggle-visibility:hover { color: var(--text); background: rgba(128,128,128,0.12); }
+
+  .row-between {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-top: -4px;
+  }
+
+  .remember {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .remember input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--surface-border);
+    border-radius: 5px;
+    background: var(--input-bg);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+  }
+
+  .remember input[type="checkbox"]:checked {
+    background: linear-gradient(135deg, var(--indigo), var(--violet));
+    border-color: transparent;
+  }
+
+  .remember input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1.5px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .strength-track {
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--surface-border);
+    overflow: hidden;
+    margin-top: 2px;
+  }
+
+  .strength-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 0.25s ease, background 0.25s ease;
+  }
+
+  .terms-row {
+    align-items: flex-start;
+    line-height: 1.5;
+    margin-top: -4px;
+  }
+
+  .terms-row input[type="checkbox"] {
+    margin-top: 2px;
+  }
+
+  .terms-row span { font-size: 12.5px; }
+
+  .forgot-link {
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity 0.2s ease;
+  }
+  [data-theme="light"] .forgot-link { color: var(--indigo); }
+
+  .forgot-link:hover { opacity: 0.8; text-decoration: underline; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 13px;
+    border-radius: 11px;
+    border: none;
+    background: linear-gradient(135deg, var(--indigo), var(--violet));
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 28px rgba(99, 102, 241, 0.45);
+    filter: brightness(1.08);
+  }
+  .btn-primary:active { transform: translateY(0); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0 18px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .divider::before, .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--surface-border);
+  }
+
+  .social-row { display: flex; gap: 10px; }
+
+  .btn-social {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px;
+    border-radius: 11px;
+    border: 1px solid var(--surface-border);
+    background: rgba(128, 128, 128, 0.04);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .btn-social:hover {
+    background: rgba(128, 128, 128, 0.08);
+    border-color: var(--cyan);
+  }
+
+  .footer-text {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 26px;
+  }
+
+  .footer-text a {
+    color: var(--cyan);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  [data-theme="light"] .footer-text a { color: var(--indigo); }
+  .footer-text a:hover { text-decoration: underline; }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cyan);
+    display: inline-block;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .top-badge {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+    font-size: 11.5px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    letter-spacing: 0.02em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .card-wrap, .particle { animation: none !important; }
+  }
+
+  @media (max-width: 420px) {
+    .card { padding: 32px 24px 26px; border-radius: 16px; }
+    h1 { font-size: 21px; }
+    .theme-toggle { top: 14px; right: 14px; }
+  }
+</style>
+</head>
+<body data-theme="dark">
+
+  <div class="bg-layer">
+    <div class="bg-base"></div>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+    <div id="particles"></div>
+  </div>
+  <div class="grain"></div>
+
+  <div class="theme-toggle">
+    <button id="btn-dark" class="active" aria-label="Dark theme" onclick="setTheme('dark')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+    <button id="btn-light" aria-label="Light theme" onclick="setTheme('light')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    </button>
+  </div>
+
+  <div class="card-wrap">
+    <div class="top-badge">
+      <span class="status-dot"></span>
+      Join 10,000+ students simulating their future
+    </div>
+
+    <div class="card">
+      <div class="brand">
+        <div class="brand-mark">DT</div>
+        <div class="brand-name">Digital<span class="accent">Twin</span> Verse</div>
+      </div>
+
+      <h1>Create your account</h1>
+      <p class="subtitle">Start your simulated career journey today.</p>
+
+      <form onsubmit="return false;">
+        <div class="field">
+          <label for="fullname">Full Name</label>
+          <div class="input-wrap">
+            <span class="icon-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <input type="text" id="fullname" placeholder="Jordan Lee" autocomplete="name">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email Address</label>
+          <div class="input-wrap">
+            <span class="icon-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+            </span>
+            <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <span class="icon-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="password" placeholder="Create a password" autocomplete="new-password" oninput="updateStrength()">
+            <button type="button" class="toggle-visibility" aria-label="Toggle password visibility" onclick="togglePw('password','eye-icon-1')">
+              <svg id="eye-icon-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="strength-track"><div id="strength-bar" class="strength-bar"></div></div>
+        </div>
+
+        <div class="field">
+          <label for="confirm">Confirm Password</label>
+          <div class="input-wrap">
+            <span class="icon-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="confirm" placeholder="Re-enter your password" autocomplete="new-password">
+            <button type="button" class="toggle-visibility" aria-label="Toggle confirm password visibility" onclick="togglePw('confirm','eye-icon-2')">
+              <svg id="eye-icon-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <label class="remember terms-row">
+          <input type="checkbox" id="terms">
+          <span>I agree to the <a href="#" class="forgot-link">Terms of Service</a> and <a href="#" class="forgot-link">Privacy Policy</a></span>
+        </label>
+
+        <button type="submit" class="btn-primary">
+          Create Account
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+
+      <div class="divider">or sign up with</div>
+
+      <div class="social-row">
+        <button class="btn-social" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 10.8v3.9h5.5c-.24 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.9 1.5l2.6-2.5C16.9 4 14.7 3 12 3c-5 0-9 4-9 9.7s4 9.7 9 9.7c5.2 0 8.6-3.6 8.6-8.7 0-.6 0-1-.1-1.5H12z"/></svg>
+          Google
+        </button>
+        <button class="btn-social" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.87-.01-1.71-2.78.62-3.37-1.36-3.37-1.36-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.53 1.05 1.53 1.05.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.32.1-2.75 0 0 .84-.28 2.75 1.05a9.29 9.29 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.43.2 2.49.1 2.75.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.81 0 .27.18.6.69.49A10.26 10.26 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"/></svg>
+          GitHub
+        </button>
+      </div>
+
+      <p class="footer-text">Already have an account? <a href="login.html">Sign in</a></p>
+    </div>
+  </div>
+
+  <script>
+    function togglePw(inputId, eyeId) {
+      const pw = document.getElementById(inputId);
+      const eye = document.getElementById(eyeId);
+      if (pw.type === 'password') {
+        pw.type = 'text';
+        eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      } else {
+        pw.type = 'password';
+        eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>';
+      }
+    }
+
+    function updateStrength() {
+      const val = document.getElementById('password').value;
+      const bar = document.getElementById('strength-bar');
+      let score = 0;
+      if (val.length >= 8) score++;
+      if (/[A-Z]/.test(val)) score++;
+      if (/[0-9]/.test(val)) score++;
+      if (/[^A-Za-z0-9]/.test(val)) score++;
+      const colors = ['#F87171', '#F87171', '#FBBF24', '#34D399', '#22D3EE'];
+      const widths = [0, 25, 50, 75, 100];
+      bar.style.width = (val.length === 0 ? 0 : widths[score] || 25) + '%';
+      bar.style.background = colors[score] || colors[0];
+    }
+
+    function setTheme(mode) {
+      document.body.setAttribute('data-theme', mode);
+      document.getElementById('btn-dark').classList.toggle('active', mode === 'dark');
+      document.getElementById('btn-light').classList.toggle('active', mode === 'light');
+      try { localStorage.setItem('dtv-theme', mode); } catch (e) {}
+    }
+
+    (function initTheme() {
+      try {
+        const saved = localStorage.getItem('dtv-theme');
+        if (saved === 'light' || saved === 'dark') setTheme(saved);
+      } catch (e) {}
+    })();
+
+    // generate floating particles with randomized size/position/duration/drift
+    const container = document.getElementById('particles');
+    const count = 22;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 2 + Math.random() * 4;
+      p.style.width = size + 'px';
+      p.style.height = size + 'px';
+      p.style.left = Math.random() * 100 + 'vw';
+      p.style.bottom = '-5vh';
+      p.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+      const duration = 14 + Math.random() * 16;
+      p.style.animationDuration = duration + 's';
+      p.style.animationDelay = (Math.random() * duration) + 's';
+      container.appendChild(p);
+    }
+  </script>
+
+</body>
+</html>
